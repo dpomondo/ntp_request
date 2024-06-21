@@ -9,22 +9,23 @@ set(PICO_SDK_PATH "/home/dpoyesac/Projects/pico/pico-sdk")
 include(pico_sdk_import.cmake)
 
 # fix this
-project(eeprom_25XX C CXX ASM)
+
+project(ntp_request C CXX ASM)
 
 pico_sdk_init()
 
 # fix this
-add_library(eeprom_25XX 
-    25LC320A.c
-    25LC320A.h
+add_library(ntp_request
+	ntp_request.c
+	ntp_request.h
     )
 
 # fix this
-target_link_libraries(eeprom_25XX 
+target_link_libraries(ntp_request
         pico_stdlib
-        hardware_spi
-        hardware_gpio
+	hardware_rtc
+	pico_cyw43_arch_lwip_threadsafe_background
         )
 
 # fix this
-target_include_directories(eeprom_25XX PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
+target_include_directories(ntp_request PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
