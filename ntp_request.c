@@ -1,7 +1,10 @@
 #include "pico/stdlib.h"
 #include <time.h>
+#include <stdbool.h>
 #include "hardware/rtc.h"
+#include "hardware/timer.h"
 #include "pico/time.h"
+// #include "pico/platform.h"
 #include "pico/util/datetime.h"
 
 #include "pico/cyw43_arch.h"
@@ -71,10 +74,15 @@ int set_rtc_using_ntp_request_blocking(void)
             printf("\tDNS request has done something very strange, should not be here\r\n");
             break;
     } // end switch...err
+    printf("looping & waiting...\n");
     while ( attempt->rtc_clock_set == false )
     {
-        tight_loop_contents();
+        // tight_loop_contents causes a hang, no longer is defined in this context
+        // tight_loop_contents();
+        busy_wait_ms(1000);
+        printf(".");
     }
+    printf("\rShould be setting the RTC now...");
     rtc_init();
     rtc_set_datetime(&attempt->time_returned);
     // clk_sys is >2000x faster than clk_rtc, so datetime is not updated immediately when rtc_get_datetime() is called.
@@ -84,6 +92,7 @@ int set_rtc_using_ntp_request_blocking(void)
     cancel_alarm(attempt->dns_resend_alarm);
     cancel_alarm(attempt->ntp_resend_alarm);
     free(attempt);
+    printf("RTC should be set!\n");
     return EXIT_SUCCESS;
 } // end set_rtc_using_ntp_request_blocking
 
@@ -206,7 +215,7 @@ static void udp_received_func(void *arg, struct udp_pcb *pcb, struct pbuf *p, co
         time_t epoch = seconds_since_1970 - MOUNTAIN_STANDARD_OFFSET + DAYLIGHT_SAVINGS_OFFSET; 
         struct tm *utc = localtime(&epoch);
 
-        datetime_t t = tm_to_datetime(utc);
+        datetime_t t = local_tm_to_datetime(utc);
         cancel_alarm(attempt_ptr->ntp_resend_alarm);
         attempt_ptr->rtc_clock_set = true;
         attempt_ptr->time_returned = t;
@@ -217,6 +226,7 @@ static void udp_received_func(void *arg, struct udp_pcb *pcb, struct pbuf *p, co
         datetime_to_str(datetime_str, sizeof(datetime_buf), &t);
         printf("time returned from internet was:\r\n%s      ", datetime_str);
     }
+    printf("\tshould be breaking the loop now: %s", attempt_ptr->rtc_clock_set ? "true" : "false");
     pbuf_free(p);
 } // end udp_received_func
 
@@ -224,8 +234,7 @@ static void udp_received_func(void *arg, struct udp_pcb *pcb, struct pbuf *p, co
 *  datetime_t (from pico/util/datetime.h) in order 
 *  to feed the real time clock
 *  */
-datetime_t tm_to_datetime(struct tm* t)
-{
+datetime_t local_tm_to_datetime(struct tm* t) {
     datetime_t dt = {
         .year  = t->tm_year + 1900,
         .month = t->tm_mon + 1,
@@ -241,7 +250,7 @@ datetime_t tm_to_datetime(struct tm* t)
 /* Convert a datetime_t (from pico/util/datetime.h) 
 *  pointer into a tm struct (from stdlib time.h)
 *  */
-struct tm datetime_to_tm(datetime_t* t)
+struct tm local_datetime_to_tm(datetime_t* t)
 {
     struct tm reverse_time = {
             .tm_year = t->year - 1900,
@@ -261,6 +270,6 @@ struct tm datetime_to_tm(datetime_t* t)
 *  */
 int approx_epoch(datetime_t * t_ptr)
 {
-    struct tm reverse_time = datetime_to_tm(t_ptr);
+    struct tm reverse_time = local_datetime_to_tm(t_ptr);
     return (int)mktime(&reverse_time) + MOUNTAIN_STANDARD_OFFSET - DAYLIGHT_SAVINGS_OFFSET;
 }

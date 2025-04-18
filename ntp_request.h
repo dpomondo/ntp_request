@@ -30,8 +30,8 @@ static void dns_request_callback(const char *name, const ip_addr_t *ipaddr, void
 static void udp_received_func(void *arg, struct udp_pcb *pcb, struct pbuf *p, const ip_addr_t *addr, u16_t port);
 
 // utilities to change tm (from time.h) to datetime (from pico/time.h)
-struct tm datetime_to_tm(datetime_t* t);
-datetime_t tm_to_datetime(struct tm* t);
+struct tm local_datetime_to_tm(datetime_t* t);
+datetime_t local_tm_to_datetime(struct tm* t);
 int approx_epoch(datetime_t * t_ptr);
 
 #endif // !_NTP_REQUEST_H

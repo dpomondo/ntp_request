@@ -23,8 +23,9 @@ add_library(ntp_request
 # fix this
 target_link_libraries(ntp_request
         pico_stdlib
-	hardware_rtc
-	pico_cyw43_arch_lwip_threadsafe_background
+        hardware_timer
+        hardware_rtc
+        pico_cyw43_arch_lwip_threadsafe_background
         )
 
 # fix this
